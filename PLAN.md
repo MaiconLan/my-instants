@@ -15,13 +15,12 @@ App Android (APK) para ~3 amigos: enviar áudios, nomear, tocar e compartilhar n
 - Referência visual e de comportamento: `design/My Instants.dc.html` (abrir no navegador) + especificação em `design/README.md` (tokens, telas, textos, regras de áudio).
 
 ## Fases
-1. **Migrar áudios antigos** do Firebase (script Node único, antes que o acesso mude).
-2. **Setup**: projeto Supabase, rodar `schema.sql`, app Expo com login/cadastro.
-3. **Núcleo**: grade colorida, busca, tocar ao toque, compartilhar no WhatsApp (expo-sharing).
-4. **Upload**: escolher arquivo → tela de nome + "Áudio público" → enviar.
-   Depois: receber áudio compartilhado de outros apps (expo-share-intent, exige dev build).
-5. **Extras**: favoritos, editar nome/visibilidade, excluir, drawer (Áudios/Favoritos/Perfil/Sair).
-6. **APK**: EAS local ou GitHub Actions.
+1. **Migrar áudios antigos** do Firebase — por último, depende do export feito por outra pessoa.
+2. ✅ **Setup**: Supabase (`schema.sql`, `002_profiles.sql`), app Expo com login/cadastro.
+3. ✅ **Núcleo**: grade colorida, busca, tocar ao toque, compartilhar no WhatsApp.
+4. ✅ **Upload**: escolher arquivo → nome + "Áudio público" → enviar; receber áudio de outros apps (só no APK).
+5. ✅ **Extras**: favoritos, editar nome/visibilidade, excluir; cache persistente dos áudios.
+6. ✅ **APK**: GitHub Actions (`check.yml`, `build-rc.yml` com label RC, `apk.yml` na main).
 
 ## Pendente de você
 - Rodar no SQL Editor do Supabase, nesta ordem: `supabase/schema.sql` e `supabase/002_profiles.sql`.
