@@ -2,6 +2,7 @@ import * as DocumentPicker from 'expo-document-picker';
 import { AudioPlayer, createAudioPlayer } from 'expo-audio';
 import { ReactNode, useEffect, useRef, useState } from 'react';
 import {
+  Animated,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -13,10 +14,11 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as api from '../lib/api';
 import type { PickedFile, Sound } from '../lib/api';
-import { playSound, probeDuration, shareSound } from '../lib/audio';
+import { playSound, probeDuration, shareSound, stopAll } from '../lib/audio';
 import { formatDuration, stripExt } from '../lib/format';
 import { useStore } from '../lib/store';
 import { colors, fonts, MAX_FILE_BYTES, SOUND_COLORS } from '../lib/theme';
+import { Toast } from './Toast';
 import { Icon, IconName, T } from './ui';
 
 function Sheet({
@@ -27,19 +29,23 @@ function Sheet({
   onClose: () => void;
 }) {
   const insets = useSafeAreaInsets();
+  const y = useRef(new Animated.Value(40)).current;
+  useEffect(() => {
+    Animated.timing(y, { toValue: 0, duration: 180, useNativeDriver: true }).start();
+  }, [y]);
   return (
-    <Modal transparent animationType="slide" onRequestClose={onClose} statusBarTranslucent navigationBarTranslucent>
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+    >
+      <Pressable style={styles.scrim} onPress={onClose} />
+      <Animated.View
+        style={[styles.sheet, { paddingBottom: insets.bottom + 20, transform: [{ translateY: y }] }]}
       >
-        <Pressable style={styles.scrim} onPress={onClose} />
-        <View style={[styles.sheet, { paddingBottom: insets.bottom + 20 }]}>
-          <View style={styles.handle} />
-          {children}
-        </View>
-      </KeyboardAvoidingView>
-    </Modal>
+        <View style={styles.handle} />
+        {children}
+      </Animated.View>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -111,9 +117,19 @@ function FormSheet({
   const [submitted, setSubmitted] = useState(false);
   const [progress, setProgress] = useState<number | null>(null);
   const [previewing, setPreviewing] = useState(false);
+  const [sendError, setSendError] = useState<string | null>(null);
   const player = useRef<AudioPlayer | null>(null);
 
-  useEffect(() => () => player.current?.remove(), []);
+  // Ao fechar o sheet, para o que a pré-escuta tiver deixado tocando (arquivo novo ou
+  // o próprio áudio, no modo editar).
+  useEffect(
+    () => () => {
+      player.current?.pause();
+      player.current?.remove();
+      if (sound) stopAll();
+    },
+    [sound],
+  );
 
   const durationMs = sound ? sound.duration_ms : file!.durationMs;
   const fileName = sound ? sound.name : file!.name;
@@ -136,6 +152,7 @@ function FormSheet({
 
   const submit = async () => {
     setSubmitted(true);
+    setSendError(null);
     if (!name.trim() || progress !== null) return;
     setProgress(0);
     const tick = setInterval(
@@ -162,8 +179,10 @@ function FormSheet({
         toast(isPublic ? 'Áudio enviado — visível pra todos' : 'Áudio enviado — só você vê');
       }
     } catch (e: any) {
+      console.error('[upload]', e);
       setProgress(null);
-      toast(e?.message ? `Erro: ${e.message}` : 'Não foi possível enviar');
+      // Inline: o toast fica atrás do sheet e o erro passava despercebido.
+      setSendError(e?.message || e?.error_description || 'Não foi possível enviar.');
     } finally {
       clearInterval(tick);
     }
@@ -230,6 +249,13 @@ function FormSheet({
           </T>
         </View>
       </Pressable>
+
+      {sendError && (
+        <View style={styles.sendError}>
+          <Icon name="error-outline" size={20} color={colors.danger} />
+          <T style={styles.sendErrorText}>{sendError}</T>
+        </View>
+      )}
 
       {sending && !editing && (
         <View style={{ marginTop: 14 }}>
@@ -367,30 +393,28 @@ function DeleteDialog({ sound }: { sound: Sound }) {
   };
 
   return (
-    <Modal transparent animationType="fade" onRequestClose={() => open(null)} statusBarTranslucent navigationBarTranslucent>
-      <View style={styles.dialogWrap}>
-        <Pressable style={styles.scrimAbs} onPress={() => !busy && open(null)} />
-        <View style={styles.dialog}>
-          <Icon name="delete" size={32} color={colors.danger} />
-          <T style={styles.dialogTitle}>Excluir “{sound.name}”?</T>
-          <T style={styles.dialogText}>
-            O áudio sai da lista de todo mundo e o arquivo é apagado. Não dá pra desfazer.
-          </T>
-          <View style={styles.dialogBtns}>
-            <Pressable onPress={() => open(null)} disabled={busy} style={styles.dialogCancel}>
-              <T style={styles.cancelText}>Cancelar</T>
-            </Pressable>
-            <Pressable
-              onPress={confirm}
-              disabled={busy}
-              style={[styles.dialogDel, busy && { opacity: 0.6 }]}
-            >
-              <T style={styles.primaryText}>{busy ? 'Excluindo…' : 'Excluir'}</T>
-            </Pressable>
-          </View>
+    <View style={styles.dialogWrap}>
+      <Pressable style={styles.scrimAbs} onPress={() => !busy && open(null)} />
+      <View style={styles.dialog}>
+        <Icon name="delete" size={32} color={colors.danger} />
+        <T style={styles.dialogTitle}>Excluir “{sound.name}”?</T>
+        <T style={styles.dialogText}>
+          O áudio sai da lista de todo mundo e o arquivo é apagado. Não dá pra desfazer.
+        </T>
+        <View style={styles.dialogBtns}>
+          <Pressable onPress={() => open(null)} disabled={busy} style={styles.dialogCancel}>
+            <T style={styles.cancelText}>Cancelar</T>
+          </Pressable>
+          <Pressable
+            onPress={confirm}
+            disabled={busy}
+            style={[styles.dialogDel, busy && { opacity: 0.6 }]}
+          >
+            <T style={styles.primaryText}>{busy ? 'Excluindo…' : 'Excluir'}</T>
+          </Pressable>
         </View>
       </View>
-    </Modal>
+    </View>
   );
 }
 
@@ -399,19 +423,37 @@ function DeleteDialog({ sound }: { sound: Sound }) {
 export function Overlays() {
   const overlay = useStore((s) => s.overlay);
   const sounds = useStore((s) => s.sounds);
+  const close = useStore((s) => s.openOverlay);
   if (!overlay) return null;
 
-  if (overlay.kind === 'upload') return <UploadSheet />;
-  if (overlay.kind === 'form' && overlay.mode === 'new') {
-    return <FormSheet file={overlay.file} />;
+  let content: ReactNode = null;
+  if (overlay.kind === "upload") content = <UploadSheet />;
+  else if (overlay.kind === "form" && overlay.mode === "new") {
+    content = <FormSheet file={overlay.file} />;
+  } else {
+    const sound = sounds.find((s) => "soundId" in overlay && s.id === overlay.soundId);
+    if (sound) {
+      if (overlay.kind === "form") content = <FormSheet key={sound.id} sound={sound} />;
+      else if (overlay.kind === "actions") content = <ActionsSheet sound={sound} />;
+      else if (overlay.kind === "delete") content = <DeleteDialog sound={sound} />;
+    }
   }
-  const sound = sounds.find(
-    (s) => 'soundId' in overlay && s.id === overlay.soundId,
+  if (!content) return null;
+
+  // Um Modal só para todos os sheets: trocar de um Modal para outro no Android
+  // pisca/trava a tela. O toast fica visível aqui dentro também (ver Toast abaixo).
+  return (
+    <Modal
+      transparent
+      animationType="none"
+      statusBarTranslucent
+      navigationBarTranslucent
+      onRequestClose={() => close(null)}
+    >
+      {content}
+      <Toast />
+    </Modal>
   );
-  if (!sound) return null;
-  if (overlay.kind === 'form') return <FormSheet key={sound.id} sound={sound} />;
-  if (overlay.kind === 'actions') return <ActionsSheet sound={sound} />;
-  return <DeleteDialog sound={sound} />;
 }
 
 const styles = StyleSheet.create({
@@ -482,6 +524,16 @@ const styles = StyleSheet.create({
     color: colors.text,
   },
   err: { fontSize: 12.5, color: colors.danger, marginTop: 4 },
+  sendError: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    backgroundColor: colors.errorBg,
+    borderRadius: 14,
+    padding: 12,
+    marginTop: 14,
+  },
+  sendErrorText: { flex: 1, fontSize: 13.5 },
 
   swatches: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 8 },
   swatch: { width: 34, height: 34, borderRadius: 17 },

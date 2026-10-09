@@ -52,6 +52,13 @@ function release(entry: Live) {
   if (i >= 0) live.splice(i, 1);
   try {
     entry.sub.remove();
+  } catch {}
+  // `remove()` libera o player, mas não garante que o som já em andamento pare:
+  // pausar primeiro é o que de fato silencia.
+  try {
+    entry.player.pause();
+  } catch {}
+  try {
     entry.player.remove();
   } catch {}
   sync();
@@ -63,20 +70,83 @@ export function stopAll() {
 
 // --- cache local ---------------------------------------------------------
 
-const cacheDir = new Directory(Paths.cache, 'sounds');
+// Paths.document, e não Paths.cache: a pasta de cache o Android esvazia quando falta
+// espaço, e aqui o áudio precisa continuar lá depois de fechar e abrir o app.
+const cacheDir = new Directory(Paths.document, "sounds");
+const inflight = new Map<string, Promise<File>>();
 
-export async function ensureLocal(sound: Sound): Promise<File> {
+function localFile(sound: Sound): File {
+  return new File(cacheDir, `${sound.id}.${extOf(sound.file_path)}`);
+}
+
+function isValid(file: File): boolean {
+  return file.exists && (file.size ?? 0) > 0;
+}
+
+export function ensureLocal(sound: Sound): Promise<File> {
+  const file = localFile(sound);
+  if (isValid(file)) return Promise.resolve(file);
+  let job = inflight.get(sound.id);
+  if (!job) {
+    job = download(sound, file).finally(() => inflight.delete(sound.id));
+    inflight.set(sound.id, job);
+  }
+  return job;
+}
+
+/** Baixa para um .part e só renomeia no fim: um download cortado nunca vira cache. */
+async function download(sound: Sound, file: File): Promise<File> {
   if (!cacheDir.exists) cacheDir.create({ intermediates: true });
-  const file = new File(cacheDir, `${sound.id}.${extOf(sound.file_path)}`);
-  if (file.exists) return file;
+  if (file.exists) file.delete();
+  const part = new File(cacheDir, `${sound.id}.part`);
+  if (part.exists) part.delete();
   const url = await signedUrl(sound.file_path);
-  return File.downloadFileAsync(url, file);
+  const got = await File.downloadFileAsync(url, part);
+  if ((got.size ?? 0) <= 0) {
+    got.delete();
+    throw new Error("O download do áudio veio vazio.");
+  }
+  await got.move(file);
+  return file;
 }
 
 export function dropLocal(sound: Sound) {
   try {
-    const f = new File(cacheDir, `${sound.id}.${extOf(sound.file_path)}`);
+    const f = localFile(sound);
     if (f.exists) f.delete();
+  } catch {}
+}
+
+/** Baixa em segundo plano o que ainda não está no aparelho (3 de cada vez). */
+export async function prefetch(sounds: Sound[]) {
+  const todo = sounds.filter((s) => !isValid(localFile(s)));
+  let i = 0;
+  const worker = async () => {
+    while (i < todo.length) {
+      const s = todo[i++];
+      try {
+        await ensureLocal(s);
+      } catch {}
+    }
+  };
+  await Promise.all([worker(), worker(), worker()]);
+}
+
+/** Apaga do aparelho o que não está mais na lista (excluído, ou virou privado de outro). */
+export function pruneLocal(sounds: Sound[]) {
+  try {
+    if (!cacheDir.exists) return;
+    const keep = new Set(sounds.map((s) => s.id));
+    for (const entry of cacheDir.list()) {
+      if (!(entry instanceof File)) continue;
+      const id = entry.name.split(".")[0];
+      // Um .part de download em andamento não se mexe.
+      if (entry.name.endsWith(".part")) {
+        if (inflight.size === 0) entry.delete();
+      } else if (!keep.has(id)) {
+        entry.delete();
+      }
+    }
   } catch {}
 }
 

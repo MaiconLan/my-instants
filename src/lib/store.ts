@@ -3,7 +3,7 @@ import type { User } from '@supabase/supabase-js';
 import { create } from 'zustand';
 import * as api from './api';
 import type { PickedFile, Sound } from './api';
-import { dropLocal, PlayMode, stopAll } from './audio';
+import { dropLocal, PlayMode, prefetch, pruneLocal, stopAll } from './audio';
 
 export type Filter = 'todos' | 'favoritos' | 'meus' | 'publicos' | 'privados';
 export type SortKey = 'recentes' | 'az';
@@ -69,6 +69,8 @@ export const useStore = create<State>((set, get) => ({
     try {
       const { sounds, favorites } = await api.fetchAll();
       set({ sounds, favorites, loading: false });
+      pruneLocal(sounds);
+      prefetch(sounds);
     } catch (e: any) {
       set({ loading: false, error: e?.message ?? 'Erro ao carregar' });
     }

@@ -54,6 +54,20 @@ export async function setFavorite(userId: string, soundId: string, on: boolean) 
   if (error) throw error;
 }
 
+/**
+ * Lê o arquivo escolhido. O `File.bytes()` do expo-file-system recusa caminhos fora das
+ * pastas do app ("missing READ permission") — o que acontece com arquivos vindos do
+ * seletor ou de outro app. O `fetch` lê file:// e content:// sem essa checagem.
+ */
+async function readBytes(uri: string): Promise<Uint8Array> {
+  try {
+    const res = await fetch(uri);
+    return new Uint8Array(await res.arrayBuffer());
+  } catch {
+    return new File(uri).bytes();
+  }
+}
+
 export async function uploadSound(
   userId: string,
   file: PickedFile,
@@ -61,7 +75,7 @@ export async function uploadSound(
 ): Promise<Sound> {
   const ext = extOf(file.name);
   const path = `${userId}/${randomUUID()}.${ext}`;
-  const bytes = await new File(file.uri).bytes();
+  const bytes = await readBytes(file.uri);
   const up = await supabase.storage
     .from('audios')
     .upload(path, bytes, { contentType: mimeOf(ext) });
@@ -89,8 +103,14 @@ export async function updateSound(
   id: string,
   patch: { name: string; color: string; is_public: boolean },
 ) {
-  const { error } = await supabase.from('sounds').update(patch).eq('id', id);
+  const { data, error } = await supabase
+    .from('sounds')
+    .update(patch)
+    .eq('id', id)
+    .select('id');
   if (error) throw error;
+  // O RLS filtra em silêncio: sem linha de volta, nada foi alterado.
+  if (!data?.length) throw new Error('Você não tem permissão para editar este áudio.');
 }
 
 export async function deleteSound(sound: Sound) {

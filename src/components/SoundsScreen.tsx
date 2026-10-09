@@ -70,7 +70,10 @@ export function SoundsScreen({ favoritesOnly = false }: { favoritesOnly?: boolea
 
   const onPress = useCallback(
     (s: Sound) => {
-      playSound(s, mode).catch(() => showToast('Não foi possível tocar o áudio'));
+      playSound(s, mode).catch((e) => {
+        console.error('[play]', e);
+        showToast(e?.message ? `Erro ao tocar: ${e.message}` : 'Não foi possível tocar o áudio');
+      });
     },
     [mode, showToast],
   );
