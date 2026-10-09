@@ -1,0 +1,50 @@
+{
+  "expo": {
+    "name": "My Instants",
+    "slug": "my-instants",
+    "scheme": "myinstants",
+    "version": "2.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "backgroundColor": "#141210",
+    "android": {
+      "package": "com.myinstants.app",
+      "adaptiveIcon": {
+        "backgroundColor": "#141210",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "plugins": [
+      "expo-router",
+      "expo-font",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#141210"
+        }
+      ],
+      "expo-audio",
+      "expo-sharing",
+      "expo-asset",
+      [
+        "expo-share-intent",
+        {
+          "disableIOS": true,
+          "androidIntentFilters": [
+            "audio/*"
+          ]
+        }
+      ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "2d514ead-483c-4945-ae27-509c3ce8c7a7"
+      }
+    },
+    "owner": "maiconlanzendorf"
+  }
+}

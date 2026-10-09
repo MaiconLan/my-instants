@@ -1,0 +1,247 @@
+name: APK
+
+# O merge na main e o release, e o APK sai sozinho. Este workflow trata de release;
+# APK de PR e assunto do build-rc.yml, que so roda com o label RC.
+on:
+  push:
+    branches: [main]
+  # Reconstroi o APK da versao que ja esta na main, sem tocar no numero. Nao e o caminho
+  # normal nem a forma de se recuperar de falha (para isso existe "Re-run failed jobs").
+  workflow_dispatch:
+
+# contents: write serve ao commit de versao e a release que carrega o .apk.
+permissions:
+  contents: write
+
+concurrency:
+  group: apk-${{ github.ref }}
+  # Sem cancel-in-progress de proposito: cancelar pela metade deixa o commit de versao
+  # empurrado e nenhum APK correspondente.
+  cancel-in-progress: false
+
+defaults:
+  run:
+    working-directory: mobile
+
+jobs:
+  # Sobe a versao e para. Separado do build porque os dois falham por motivos diferentes:
+  # uma versao empurrada nao se desfaz, e um build que falhou so precisa rodar de novo.
+  version:
+    name: Versao
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    # Push com o GITHUB_TOKEN nao dispara workflow, entao o commit de versao normalmente
+    # nem chega aqui. A guarda cobre o dia em que isso virar um PAT.
+    if: "github.event_name == 'push' && !startsWith(github.event.head_commit.message, 'chore(release):')"
+
+    outputs:
+      released: ${{ steps.plan.outputs.released }}
+      version: ${{ steps.result.outputs.version }}
+      sha: ${{ steps.result.outputs.sha }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+
+      - run: npm ci
+
+      # Merge sem changeset pendente nao muda o app (doc, CI, refatoracao): sai sem
+      # construir e sem falhar, para um X vermelho nao virar rotina.
+      - name: Ha algo para soltar?
+        id: plan
+        run: |
+          COUNT=$(node -e "const fs=require('fs');console.log(fs.readdirSync('.changeset').filter((n) => n.endsWith('.md') && n !== 'README.md').length)")
+          if [ "$COUNT" -gt 0 ]; then
+            echo "released=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "released=false" >> "$GITHUB_OUTPUT"
+            echo "Nenhum changeset pendente. Nada mudou para quem usa o app." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Identidade do commit de versao
+        if: steps.plan.outputs.released == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Subir a versao
+        if: steps.plan.outputs.released == 'true'
+        run: node tools/release-apk.mjs --no-build
+
+      - name: Empurrar o commit de versao
+        if: steps.plan.outputs.released == 'true'
+        run: git push origin HEAD:${{ github.ref_name }}
+
+      # O APK sai do commit de versao, por SHA, e nao do head da main (que ja pode ter
+      # andado): o numero dentro do APK e exatamente o que este commit criou.
+      - name: Commit de versao
+        if: steps.plan.outputs.released == 'true'
+        id: result
+        run: |
+          echo "version=$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
+          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+  apk:
+    name: APK
+    needs: version
+
+    # Tres portas: (1) saiu uma versao nesta execucao; (2) um commit de versao chegou
+    # como push proprio (so com PAT); (3) reconstrucao manual. `always()` porque `version`
+    # e pulado em (2) e (3), e um `needs` pulado pularia o dependente junto.
+    if: >-
+      always() && (
+        needs.version.outputs.released == 'true'
+        || startsWith(github.event.head_commit.message, 'chore(release):')
+        || github.event_name == 'workflow_dispatch'
+      )
+
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Os secrets estao configurados?
+        working-directory: .
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+          SUPABASE_URL: ${{ secrets.EXPO_PUBLIC_SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.EXPO_PUBLIC_SUPABASE_KEY }}
+        run: |
+          for v in EXPO_TOKEN SUPABASE_URL SUPABASE_KEY; do
+            if [ -z "${!v:-}" ]; then
+              echo "::error::Secret ausente: $v (EXPO_TOKEN, EXPO_PUBLIC_SUPABASE_URL, EXPO_PUBLIC_SUPABASE_KEY)."
+              echo "::error::Settings -> Secrets and variables -> Actions. Sem URL/chave o APK abre sem conseguir logar."
+              exit 1
+            fi
+          done
+
+      - name: Liberar espaco em disco
+        working-directory: .
+        run: |
+          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/.ghcup \
+                      /opt/hostedtoolcache/CodeQL \
+                      "${ANDROID_HOME:-/usr/local/lib/android/sdk}/system-images" || true
+          df -h /
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.version.outputs.sha || github.sha }}
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+
+      - name: Cache do Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('mobile/package-lock.json') }}
+          restore-keys: gradle-${{ runner.os }}-
+
+      - run: npm ci
+
+      - name: Versao a construir
+        id: meta
+        run: echo "version=$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
+
+      - name: Instalar o NDK com tentativas
+        run: |
+          set -euo pipefail
+          NDK_VERSION="27.1.12297006"
+          SDKMANAGER="${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager"
+          clean() {
+            rm -rf "${ANDROID_HOME}/ndk/${NDK_VERSION}" "${ANDROID_HOME}/.temp" "${HOME}/.android/cache"
+            mkdir -p "${HOME}/.android/cache"
+          }
+          clean
+          yes | "${SDKMANAGER}" --licenses >/dev/null || true
+          for attempt in 1 2 3; do
+            if "${SDKMANAGER}" --install "ndk;${NDK_VERSION}"; then break; fi
+            echo "NDK install attempt ${attempt} failed"
+            [ "$attempt" -eq 3 ] && exit 1
+            clean
+            sleep 10
+          done
+          grep -q "Pkg.Revision = ${NDK_VERSION}" "${ANDROID_HOME}/ndk/${NDK_VERSION}/source.properties"
+
+      - name: Montar o APK neste runner
+        id: build
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+          EXPO_PUBLIC_SUPABASE_URL: ${{ secrets.EXPO_PUBLIC_SUPABASE_URL }}
+          EXPO_PUBLIC_SUPABASE_KEY: ${{ secrets.EXPO_PUBLIC_SUPABASE_KEY }}
+          VERSION: ${{ steps.meta.outputs.version }}
+        run: |
+          set -euo pipefail
+          APK="$PWD/build/my-instants-$VERSION.apk"
+          mkdir -p "$(dirname "$APK")"
+          npx eas build \
+            --profile preview \
+            --platform android \
+            --local \
+            --non-interactive \
+            --output "$APK"
+          ls -lh "$APK"
+          echo "apk=$APK" >> "$GITHUB_OUTPUT"
+
+      - name: Guardar o APK na execucao
+        uses: actions/upload-artifact@v4
+        with:
+          name: my-instants-${{ steps.meta.outputs.version }}
+          path: mobile/build/*.apk
+          if-no-files-found: error
+          retention-days: 30
+
+      # So na main: um branch carrega a mesma versao que a main ja soltou, e o --clobber
+      # trocaria o APK da release por um build que nao e o dela.
+      - name: Publicar a release
+        if: github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.meta.outputs.version }}
+          APK: ${{ steps.build.outputs.apk }}
+        run: |
+          set -euo pipefail
+          TAG="v$VERSION"
+          SHA=$(git rev-parse --short HEAD)
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" "$APK" --clobber
+          else
+            gh release create "$TAG" "$APK" \
+              --title "My Instants $VERSION" \
+              --notes "APK montado no GitHub Actions a partir do commit $SHA."
+          fi
+
+      - name: Onde baixar
+        env:
+          VERSION: ${{ steps.meta.outputs.version }}
+          ON_MAIN: ${{ github.ref == 'refs/heads/main' }}
+        run: |
+          {
+            echo "## APK $VERSION"
+            echo ""
+            if [ "$ON_MAIN" = "true" ]; then
+              echo "- **[Release v$VERSION]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/releases/tag/v$VERSION)** - o .apk direto, e o link para mandar para o grupo"
+            fi
+            echo "- Artefato **my-instants-$VERSION** no rodape desta pagina (dentro de um .zip)"
+            echo ""
+            if [ "$ON_MAIN" != "true" ]; then
+              echo "**Build do branch $GITHUB_REF_NAME, e por isso nao virou release.**"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"

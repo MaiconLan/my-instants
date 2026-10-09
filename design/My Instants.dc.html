@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,400..600,0..1,0&display=block" rel="stylesheet">
+<style>
+body{margin:0;background:#e8e4de;font-family:'Bricolage Grotesque',system-ui,sans-serif;color:#1b1814}
+a{color:#b34a1f}a:hover{color:#7d2f10}
+*{box-sizing:border-box}
+input,button{font-family:inherit}
+@keyframes dcUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+@keyframes dcFade{from{opacity:0}to{opacity:1}}
+@keyframes dcPop{from{opacity:0;transform:translate(-50%,12px)}to{opacity:1;transform:translate(-50%,0)}}
+@keyframes dcScale{from{opacity:0;transform:scale(.92)}to{opacity:1;transform:scale(1)}}
+</style>
+</helmet>
+<div style="min-height:100vh;display:flex;flex-wrap:wrap;gap:56px;align-items:center;justify-content:center;padding:40px 24px">
+  <div style="max-width:300px;display:flex;flex-direction:column;gap:14px">
+    <div style="font:600 11px 'JetBrains Mono',monospace;letter-spacing:.08em;text-transform:uppercase;color:#7a7268">My Instants v2 · protótipo Android</div>
+    <div style="font-weight:800;font-size:34px;line-height:1.02;letter-spacing:-.02em;text-wrap:pretty">Botões de meme, prontos pro WhatsApp.</div>
+    <div style="font-size:14px;line-height:1.5;color:#4d463e;text-wrap:pretty">Tudo é clicável. Os sons de exemplo são sintetizados no navegador; você também pode enviar um arquivo de áudio real pelo botão <b>+</b>.</div>
+    <div style="display:flex;flex-direction:column;gap:8px;font-size:13px;line-height:1.45;color:#4d463e">
+      <div style="display:flex;gap:8px"><span style="font:600 11px 'JetBrains Mono',monospace;color:#b34a1f;padding-top:2px">01</span><span>Toque num botão várias vezes no <b>modo caos</b> — os áudios se sobrepõem. Troque pelo chip no topo ou em Ajustes.</span></div>
+      <div style="display:flex;gap:8px"><span style="font:600 11px 'JetBrains Mono',monospace;color:#b34a1f;padding-top:2px">02</span><span><b>+</b> → arquivo → nome, cor e “Áudio público”.</span></div>
+      <div style="display:flex;gap:8px"><span style="font:600 11px 'JetBrains Mono',monospace;color:#b34a1f;padding-top:2px">03</span><span>Busca, filtros, ordenação, favoritos, compartilhar, editar e excluir (só nos seus).</span></div>
+    </div>
+  </div>
+
+  <div style="width:412px;height:880px;flex:none;border-radius:52px;background:#0c0b0a;padding:10px;box-shadow:0 30px 80px rgba(40,30,20,.35),0 0 0 2px #2a2724 inset">
+    <div style="position:relative;width:100%;height:100%;border-radius:42px;overflow:hidden;background:#141210;color:#f3efe9;display:flex;flex-direction:column">
+
+      <div style="height:38px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:0 26px;font:600 14px 'Bricolage Grotesque';color:#f3efe9">
+        <span>9:41</span>
+        <div style="width:14px;height:14px;border-radius:50%;background:#000;box-shadow:0 0 0 2px #1d1b19"></div>
+        <div style="display:flex;gap:4px;align-items:center">
+          <span style="font-family:'Material Symbols Rounded';font-size:17px;font-variation-settings:'FILL' 1">signal_cellular_alt</span>
+          <span style="font-family:'Material Symbols Rounded';font-size:17px;font-variation-settings:'FILL' 1">wifi</span>
+          <span style="font-family:'Material Symbols Rounded';font-size:17px;font-variation-settings:'FILL' 1">battery_5_bar</span>
+        </div>
+      </div>
+
+      <sc-if value="{{ isGridTab }}" hint-placeholder-val="{{ true }}">
+        <div style="flex:1;min-height:0;overflow-y:auto;scrollbar-width:none;padding-bottom:110px">
+          <div style="padding:8px 16px 0;display:flex;flex-direction:column;gap:12px;position:sticky;top:0;background:#141210;z-index:2;padding-bottom:10px">
+            <div style="display:flex;align-items:center;gap:10px;height:48px">
+              <div style="font-weight:800;font-size:27px;letter-spacing:-.02em;flex:1">{{ title }}</div>
+              <button onClick="{{ toggleMode }}" style="height:36px;display:flex;align-items:center;gap:6px;padding:0 14px 0 10px;border-radius:18px;border:none;cursor:pointer;font-weight:600;font-size:13px;background:{{ modeChipBg }};color:{{ modeChipFg }}" style-active="transform:scale(.96)">
+                <span style="font-family:'Material Symbols Rounded';font-size:20px">{{ modeIcon }}</span>{{ modeLabel }}
+              </button>
+            </div>
+            <div style="height:50px;border-radius:25px;background:#25211d;display:flex;align-items:center;gap:10px;padding:0 8px 0 16px">
+              <span style="font-family:'Material Symbols Rounded';font-size:22px;color:#a39b91">search</span>
+              <input value="{{ q }}" onChange="{{ onQ }}" placeholder="Buscar áudios" style="flex:1;min-width:0;background:transparent;border:none;outline:none;color:#f3efe9;font-size:16px">
+              <sc-if value="{{ hasQ }}" hint-placeholder-val="{{ false }}">
+                <button onClick="{{ clearQ }}" style="width:36px;height:36px;border-radius:18px;border:none;background:transparent;color:#a39b91;cursor:pointer;display:flex;align-items:center;justify-content:center"><span style="font-family:'Material Symbols Rounded';font-size:20px">close</span></button>
+              </sc-if>
+            </div>
+            <sc-if value="{{ showChips }}" hint-placeholder-val="{{ true }}">
+              <div style="display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;margin:0 -16px;padding:0 16px">
+                <sc-for list="{{ chips }}" as="c" hint-placeholder-count="5">
+                  <button onClick="{{ c.onClick }}" style="flex:none;height:34px;padding:0 14px;border-radius:10px;cursor:pointer;font-size:14px;font-weight:500;display:flex;align-items:center;gap:6px;background:{{ c.bg }};color:{{ c.fg }};border:1px solid {{ c.border }}">{{ c.label }}</button>
+                </sc-for>
+              </div>
+            </sc-if>
+            <div style="display:flex;align-items:center;justify-content:space-between">
+              <span style="font:400 12px 'JetBrains Mono',monospace;color:#a39b91">{{ countLabel }}</span>
+              <button onClick="{{ toggleSort }}" style="display:flex;align-items:center;gap:4px;border:none;background:transparent;color:#d9d2c8;font-size:13px;font-weight:500;cursor:pointer;padding:4px 0">
+                <span style="font-family:'Material Symbols Rounded';font-size:18px">swap_vert</span>{{ sortLabel }}
+              </button>
+            </div>
+          </div>
+
+          <div style="display:grid;grid-template-columns:{{ gridCols }};gap:10px;padding:2px 16px 0">
+            <sc-for list="{{ items }}" as="item" hint-placeholder-count="8">
+              <div onClick="{{ item.onTap }}" style="position:relative;aspect-ratio:1/.92;border-radius:22px;background:{{ item.color }};color:#1a1612;padding:12px;display:flex;flex-direction:column;cursor:pointer;overflow:hidden;user-select:none;transition:transform .12s" style-active="transform:scale(.95)">
+                <div style="position:absolute;left:0;top:0;bottom:0;width:{{ item.progressW }};background:rgba(20,14,8,.16);pointer-events:none"></div>
+                <div style="position:relative;display:flex;align-items:flex-start;gap:6px">
+                  <div style="flex:1;font-weight:700;font-size:{{ tileFont }};line-height:1.08;letter-spacing:-.01em;text-wrap:pretty;overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical">{{ item.name }}</div>
+                  <button onClick="{{ item.onMore }}" style="flex:none;width:30px;height:30px;margin:-6px -6px 0 0;border-radius:15px;border:none;background:transparent;color:#1a1612;cursor:pointer;display:flex;align-items:center;justify-content:center" style-hover="background:rgba(0,0,0,.1)"><span style="font-family:'Material Symbols Rounded';font-size:20px">more_vert</span></button>
+                </div>
+                <div style="position:relative;flex:1;display:flex;align-items:center;justify-content:center">
+                  <div style="width:46px;height:46px;border-radius:23px;background:{{ item.knobBg }};color:{{ item.knobFg }};display:flex;align-items:center;justify-content:center">
+                    <span style="font-family:'Material Symbols Rounded';font-size:28px;font-variation-settings:'FILL' 1">{{ item.knobIcon }}</span>
+                  </div>
+                  <sc-if value="{{ item.hasMulti }}" hint-placeholder-val="{{ false }}">
+                    <div style="position:absolute;right:0;top:4px;font:600 12px 'JetBrains Mono',monospace;background:#1a1612;color:{{ item.color }};padding:3px 7px;border-radius:9px">{{ item.voicesLabel }}</div>
+                  </sc-if>
+                </div>
+                <div style="position:relative;display:flex;align-items:center;gap:2px">
+                  <span style="font:600 11px 'JetBrains Mono',monospace;opacity:.75">{{ item.durLabel }}</span>
+                  <sc-if value="{{ item.isPrivate }}" hint-placeholder-val="{{ false }}">
+                    <span style="font-family:'Material Symbols Rounded';font-size:15px;opacity:.75;margin-left:4px;font-variation-settings:'FILL' 1">lock</span>
+                  </sc-if>
+                  <div style="flex:1"></div>
+                  <button onClick="{{ item.onFav }}" style="width:32px;height:32px;border-radius:16px;border:none;background:transparent;color:#1a1612;cursor:pointer;display:flex;align-items:center;justify-content:center" style-hover="background:rgba(0,0,0,.1)"><span style="font-family:'Material Symbols Rounded';font-size:20px;font-variation-settings:{{ item.heartFill }}">favorite</span></button>
+                  <button onClick="{{ item.onShare }}" style="width:32px;height:32px;margin-right:-6px;border-radius:16px;border:none;background:transparent;color:#1a1612;cursor:pointer;display:flex;align-items:center;justify-content:center" style-hover="background:rgba(0,0,0,.1)"><span style="font-family:'Material Symbols Rounded';font-size:20px">share</span></button>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+
+          <sc-if value="{{ isEmpty }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;flex-direction:column;align-items:center;gap:10px;padding:60px 40px;text-align:center;color:#a39b91">
+              <span style="font-family:'Material Symbols Rounded';font-size:44px">{{ emptyIcon }}</span>
+              <div style="font-size:15px;line-height:1.4;text-wrap:pretty">{{ emptyMsg }}</div>
+            </div>
+          </sc-if>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isSettings }}" hint-placeholder-val="{{ false }}">
+        <div style="flex:1;min-height:0;overflow-y:auto;scrollbar-width:none;padding:8px 16px 110px;display:flex;flex-direction:column;gap:14px">
+          <div style="font-weight:800;font-size:27px;letter-spacing:-.02em;height:48px;display:flex;align-items:center">Ajustes</div>
+          <div style="font:600 11px 'JetBrains Mono',monospace;letter-spacing:.08em;text-transform:uppercase;color:#a39b91;margin-top:4px">Modo de reprodução</div>
+          <sc-for list="{{ modeCards }}" as="m" hint-placeholder-count="2">
+            <button onClick="{{ m.onClick }}" style="text-align:left;display:flex;gap:14px;padding:16px;border-radius:22px;cursor:pointer;color:#f3efe9;background:{{ m.bg }};border:2px solid {{ m.border }}">
+              <div style="width:44px;height:44px;flex:none;border-radius:14px;background:{{ m.iconBg }};color:#1a1612;display:flex;align-items:center;justify-content:center"><span style="font-family:'Material Symbols Rounded';font-size:26px">{{ m.icon }}</span></div>
+              <div style="flex:1;display:flex;flex-direction:column;gap:4px">
+                <div style="font-weight:700;font-size:17px">{{ m.title }}</div>
+                <div style="font-size:13.5px;line-height:1.4;color:#c4bcb1;text-wrap:pretty">{{ m.desc }}</div>
+              </div>
+              <div style="width:22px;height:22px;flex:none;border-radius:11px;border:2px solid {{ m.radio }};display:flex;align-items:center;justify-content:center;margin-top:2px">
+                <sc-if value="{{ m.selected }}" hint-placeholder-val="{{ false }}"><div style="width:10px;height:10px;border-radius:5px;background:{{ m.radio }}"></div></sc-if>
+              </div>
+            </button>
+          </sc-for>
+          <button onClick="{{ demoMode }}" style="height:44px;border-radius:22px;border:1px solid #3a352f;background:transparent;color:#f3efe9;font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px">
+            <span style="font-family:'Material Symbols Rounded';font-size:20px">play_circle</span>Testar o modo atual
+          </button>
+          <div style="font:600 11px 'JetBrains Mono',monospace;letter-spacing:.08em;text-transform:uppercase;color:#a39b91;margin-top:12px">Conta</div>
+          <div style="display:flex;align-items:center;gap:12px;padding:14px 16px;border-radius:22px;background:#1f1c19">
+            <div style="width:40px;height:40px;border-radius:20px;background:oklch(0.76 0.15 285);color:#1a1612;font-weight:800;display:flex;align-items:center;justify-content:center">{{ userInitial }}</div>
+            <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px"><span style="font-weight:600;font-size:15px">{{ userName }}</span><span style="font-size:13px;color:#a39b91;overflow:hidden;text-overflow:ellipsis">{{ userEmail }} · {{ mineCount }}</span></div>
+            <button onClick="{{ logout }}" style="height:36px;padding:0 14px;border-radius:18px;border:none;background:#2c2723;color:#f3efe9;font-weight:600;cursor:pointer">Sair</button>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ anyPlaying }}" hint-placeholder-val="{{ false }}">
+        <button onClick="{{ stopAll }}" style="position:absolute;left:16px;bottom:110px;height:48px;padding:0 18px 0 14px;border-radius:24px;border:none;background:#f3efe9;color:#1a1612;font-weight:700;font-size:14px;display:flex;align-items:center;gap:8px;cursor:pointer;box-shadow:0 6px 20px rgba(0,0,0,.4);animation:dcScale .2s ease-out" style-active="transform:scale(.96)">
+          <span style="font-family:'Material Symbols Rounded';font-size:22px;font-variation-settings:'FILL' 1">stop_circle</span>{{ stopLabel }}
+        </button>
+      </sc-if>
+      <sc-if value="{{ isGridTab }}" hint-placeholder-val="{{ true }}">
+        <button onClick="{{ openPick }}" style="position:absolute;right:16px;bottom:106px;width:60px;height:60px;border-radius:20px;border:none;background:oklch(0.86 0.16 95);color:#1a1612;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 6px 20px rgba(0,0,0,.45)" style-active="transform:scale(.94)">
+          <span style="font-family:'Material Symbols Rounded';font-size:32px;font-variation-settings:'wght' 600">add</span>
+        </button>
+      </sc-if>
+
+      <div style="position:absolute;left:0;right:0;bottom:0;background:#1c1916;border-top:1px solid #26221e">
+        <div style="height:74px;display:flex">
+          <sc-for list="{{ navItems }}" as="n" hint-placeholder-count="3">
+            <button onClick="{{ n.onClick }}" style="flex:1;border:none;background:transparent;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;color:{{ n.fg }}">
+              <div style="width:62px;height:32px;border-radius:16px;display:flex;align-items:center;justify-content:center;background:{{ n.pill }}"><span style="font-family:'Material Symbols Rounded';font-size:23px;font-variation-settings:{{ n.fill }}">{{ n.icon }}</span></div>
+              <span style="font-size:12px;font-weight:600">{{ n.label }}</span>
+            </button>
+          </sc-for>
+        </div>
+        <div style="height:22px;display:flex;align-items:center;justify-content:center"><div style="width:110px;height:4px;border-radius:2px;background:#f3efe9;opacity:.6"></div></div>
+      </div>
+
+      <sc-if value="{{ isAuth }}" hint-placeholder-val="{{ true }}">
+        <div style="position:absolute;left:0;right:0;top:38px;bottom:0;z-index:15;background:#141210;display:flex;flex-direction:column;overflow-y:auto;scrollbar-width:none;padding:28px 24px 40px">
+          <div style="display:flex;gap:6px;margin-bottom:28px">
+            <div style="width:30px;height:30px;border-radius:10px;background:oklch(0.76 0.15 25)"></div>
+            <div style="width:30px;height:30px;border-radius:10px;background:oklch(0.86 0.16 95)"></div>
+            <div style="width:30px;height:30px;border-radius:10px;background:oklch(0.76 0.15 190)"></div>
+            <div style="width:30px;height:30px;border-radius:10px;background:oklch(0.76 0.15 285)"></div>
+          </div>
+          <div style="font-weight:800;font-size:34px;line-height:1.02;letter-spacing:-.02em">{{ authTitle }}</div>
+          <div style="font-size:15px;line-height:1.4;color:#a39b91;margin-top:8px;text-wrap:pretty">{{ authSub }}</div>
+          <div style="display:flex;background:#1f1c19;border-radius:16px;padding:4px;margin-top:24px">
+            <sc-for list="{{ authTabs }}" as="at" hint-placeholder-count="2">
+              <button onClick="{{ at.onClick }}" style="flex:1;height:40px;border-radius:12px;border:none;cursor:pointer;font-weight:700;font-size:14px;background:{{ at.bg }};color:{{ at.fg }}">{{ at.label }}</button>
+            </sc-for>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:14px;margin-top:20px">
+            <sc-for list="{{ authFields }}" as="fd" hint-placeholder-count="2">
+              <div style="display:flex;flex-direction:column;gap:6px">
+                <span style="font-size:13px;color:#c4bcb1">{{ fd.label }}</span>
+                <div style="height:52px;border-radius:14px;border:2px solid {{ fd.border }};background:#1a1714;display:flex;align-items:center;gap:10px;padding:0 6px 0 14px">
+                  <span style="font-family:'Material Symbols Rounded';font-size:21px;color:#a39b91">{{ fd.icon }}</span>
+                  <input type="{{ fd.type }}" value="{{ fd.value }}" onChange="{{ fd.onChange }}" placeholder="{{ fd.placeholder }}" autocomplete="off" style="flex:1;min-width:0;background:transparent;border:none;outline:none;color:#f3efe9;font-size:16px">
+                  <sc-if value="{{ fd.isPass }}" hint-placeholder-val="{{ false }}">
+                    <button onClick="{{ toggleShowPass }}" style="width:38px;height:38px;border-radius:19px;border:none;background:transparent;color:#a39b91;cursor:pointer;display:flex;align-items:center;justify-content:center"><span style="font-family:'Material Symbols Rounded';font-size:20px">{{ passIcon }}</span></button>
+                  </sc-if>
+                </div>
+                <sc-if value="{{ fd.error }}" hint-placeholder-val="{{ false }}"><span style="font-size:12.5px;color:oklch(0.75 0.15 25)">{{ fd.error }}</span></sc-if>
+              </div>
+            </sc-for>
+          </div>
+          <sc-if value="{{ isLogin }}" hint-placeholder-val="{{ true }}">
+            <button onClick="{{ forgot }}" style="align-self:flex-end;margin-top:10px;border:none;background:transparent;color:oklch(0.86 0.16 95);font-size:14px;font-weight:600;cursor:pointer;padding:4px 0">Esqueci a senha</button>
+          </sc-if>
+          <sc-if value="{{ authError }}" hint-placeholder-val="{{ false }}">
+            <div style="margin-top:14px;padding:12px 14px;border-radius:14px;background:oklch(0.3 0.06 25);color:#f3efe9;font-size:13.5px;line-height:1.4;display:flex;gap:10px;align-items:flex-start"><span style="font-family:'Material Symbols Rounded';font-size:20px;color:oklch(0.8 0.13 25)">error</span>{{ authError }}</div>
+          </sc-if>
+          <button onClick="{{ submitAuth }}" style="margin-top:22px;height:54px;border-radius:27px;border:none;background:oklch(0.86 0.16 95);color:#1a1612;font-weight:800;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;opacity:{{ authBtnOpacity }}" style-active="transform:scale(.98)">{{ authBtnLabel }}</button>
+          <div style="flex:1;min-height:20px"></div>
+          <div style="font:400 11.5px 'JetBrains Mono',monospace;color:#7a7268;text-align:center;margin-top:24px;line-height:1.5;white-space:pre-line">{{ authHint }}</div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ toastMsg }}" hint-placeholder-val="{{ false }}">
+        <div style="position:absolute;left:50%;bottom:172px;transform:translateX(-50%);max-width:340px;width:max-content;background:#f3efe9;color:#1a1612;padding:12px 18px;border-radius:12px;font-size:14px;font-weight:500;box-shadow:0 8px 24px rgba(0,0,0,.4);animation:dcPop .2s ease-out;z-index:20">{{ toastMsg }}</div>
+      </sc-if>
+
+      <sc-if value="{{ hasSheet }}" hint-placeholder-val="{{ false }}">
+        <div onClick="{{ closeSheet }}" style="position:absolute;inset:0;background:rgba(0,0,0,.55);animation:dcFade .2s;z-index:10"></div>
+      </sc-if>
+
+      <sc-if value="{{ sheetPick }}" hint-placeholder-val="{{ false }}">
+        <div style="position:absolute;left:0;right:0;bottom:0;z-index:11;background:#1f1c19;border-radius:28px 28px 0 0;padding:10px 20px 40px;display:flex;flex-direction:column;gap:16px;animation:dcUp .28s cubic-bezier(.2,.8,.2,1)">
+          <div style="width:36px;height:4px;border-radius:2px;background:#4a443d;align-self:center"></div>
+          <div style="font-weight:800;font-size:22px">Enviar áudio</div>
+          <input ref="{{ fileRef }}" type="file" accept="audio/*" onChange="{{ onFile }}" style="display:none">
+          <button onClick="{{ chooseFile }}" style="height:140px;border-radius:22px;border:2px dashed #4a443d;background:#25211d;color:#f3efe9;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px" style-hover="border-color:oklch(0.86 0.16 95)">
+            <span style="font-family:'Material Symbols Rounded';font-size:36px;color:oklch(0.86 0.16 95)">upload_file</span>
+            <span style="font-weight:700;font-size:16px">Escolher arquivo de áudio</span>
+            <span style="font:400 11.5px 'JetBrains Mono',monospace;color:#a39b91">MP3 · M4A · OGG · OPUS · WAV — até 5 MB</span>
+          </button>
+          <button onClick="{{ useSample }}" style="height:48px;border-radius:24px;border:1px solid #3a352f;background:transparent;color:#f3efe9;font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px">
+            <span style="font-family:'Material Symbols Rounded';font-size:20px">graphic_eq</span>Usar áudio de exemplo
+          </button>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ sheetForm }}" hint-placeholder-val="{{ false }}">
+        <div style="position:absolute;left:0;right:0;bottom:0;z-index:11;background:#1f1c19;border-radius:28px 28px 0 0;padding:10px 20px 34px;display:flex;flex-direction:column;gap:14px;animation:dcUp .28s cubic-bezier(.2,.8,.2,1)">
+          <div style="width:36px;height:4px;border-radius:2px;background:#4a443d;align-self:center"></div>
+          <div style="font-weight:800;font-size:22px">{{ formTitle }}</div>
+          <div style="display:flex;align-items:center;gap:12px;padding:10px 10px 10px 14px;border-radius:18px;background:{{ formColor }};color:#1a1612">
+            <span style="font-family:'Material Symbols Rounded';font-size:24px">audio_file</span>
+            <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:1px">
+              <span style="font-weight:700;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ form.fileName }}</span>
+              <span style="font:600 11px 'JetBrains Mono',monospace;opacity:.7">{{ formDur }}</span>
+            </div>
+            <button onClick="{{ previewForm }}" style="width:42px;height:42px;border-radius:21px;border:none;background:#1a1612;color:{{ formColor }};cursor:pointer;display:flex;align-items:center;justify-content:center"><span style="font-family:'Material Symbols Rounded';font-size:26px;font-variation-settings:'FILL' 1">play_arrow</span></button>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <div style="display:flex;justify-content:space-between;font-size:13px;color:#c4bcb1"><span>Nome do áudio</span><span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">{{ nameCount }}</span></div>
+            <input value="{{ form.name }}" onChange="{{ onName }}" maxlength="80" placeholder="Ex.: Tá pegando fogo bicho" style="height:52px;border-radius:14px;border:2px solid {{ nameBorder }};background:#141210;color:#f3efe9;font-size:16px;padding:0 14px;outline:none">
+            <sc-if value="{{ nameError }}" hint-placeholder-val="{{ false }}"><span style="font-size:12.5px;color:oklch(0.75 0.15 25)">{{ nameError }}</span></sc-if>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <span style="font-size:13px;color:#c4bcb1">Cor do botão</span>
+            <div style="display:flex;gap:10px;flex-wrap:wrap">
+              <sc-for list="{{ swatches }}" as="sw" hint-placeholder-count="8">
+                <button onClick="{{ sw.onClick }}" style="width:34px;height:34px;border-radius:17px;border:none;cursor:pointer;background:{{ sw.bg }};box-shadow:{{ sw.ring }}"></button>
+              </sc-for>
+            </div>
+          </div>
+          <button onClick="{{ togglePub }}" style="display:flex;align-items:flex-start;gap:12px;text-align:left;border:none;background:#25211d;border-radius:16px;padding:14px;cursor:pointer;color:#f3efe9">
+            <div style="width:22px;height:22px;flex:none;border-radius:6px;display:flex;align-items:center;justify-content:center;background:{{ pubBoxBg }};border:2px solid {{ pubBoxBorder }}">
+              <sc-if value="{{ form.pub }}" hint-placeholder-val="{{ true }}"><span style="font-family:'Material Symbols Rounded';font-size:18px;color:#1a1612;font-variation-settings:'wght' 700">check</span></sc-if>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:3px">
+              <span style="font-weight:700;font-size:15px">Áudio público</span>
+              <span style="font-size:13px;line-height:1.35;color:#a39b91">{{ pubDesc }}</span>
+            </div>
+          </button>
+          <sc-if value="{{ isUploading }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;flex-direction:column;gap:6px">
+              <div style="height:6px;border-radius:3px;background:#2c2723;overflow:hidden"><div style="height:100%;width:{{ uploadW }};background:oklch(0.86 0.16 95);transition:width .1s"></div></div>
+              <span style="font:400 11.5px 'JetBrains Mono',monospace;color:#a39b91">{{ uploadLabel }}</span>
+            </div>
+          </sc-if>
+          <div style="display:flex;justify-content:flex-end;gap:8px">
+            <button onClick="{{ closeSheet }}" style="height:46px;padding:0 20px;border-radius:23px;border:none;background:transparent;color:#f3efe9;font-weight:600;font-size:15px;cursor:pointer">Cancelar</button>
+            <button onClick="{{ submitForm }}" style="height:46px;padding:0 24px;border-radius:23px;border:none;background:oklch(0.86 0.16 95);color:#1a1612;font-weight:700;font-size:15px;cursor:pointer;display:flex;align-items:center;gap:6px" style-active="transform:scale(.97)">{{ submitLabel }}</button>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ sheetActions }}" hint-placeholder-val="{{ false }}">
+        <div style="position:absolute;left:0;right:0;bottom:0;z-index:11;background:#1f1c19;border-radius:28px 28px 0 0;padding:10px 12px 34px;display:flex;flex-direction:column;gap:6px;animation:dcUp .28s cubic-bezier(.2,.8,.2,1)">
+          <div style="width:36px;height:4px;border-radius:2px;background:#4a443d;align-self:center;margin-bottom:6px"></div>
+          <div style="display:flex;align-items:center;gap:12px;padding:6px 8px 12px">
+            <div style="width:48px;height:48px;border-radius:14px;background:{{ sel.color }}"></div>
+            <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px">
+              <span style="font-weight:700;font-size:17px">{{ sel.name }}</span>
+              <span style="font-size:13px;color:#a39b91">{{ sel.meta }}</span>
+            </div>
+          </div>
+          <sc-for list="{{ actionRows }}" as="r" hint-placeholder-count="4">
+            <button onClick="{{ r.onClick }}" style="height:52px;display:flex;align-items:center;gap:16px;padding:0 12px;border-radius:14px;border:none;background:transparent;color:{{ r.fg }};font-size:15.5px;font-weight:500;cursor:pointer;text-align:left" style-hover="background:#2a2622">
+              <span style="font-family:'Material Symbols Rounded';font-size:23px;font-variation-settings:{{ r.fill }}">{{ r.icon }}</span>{{ r.label }}
+            </button>
+          </sc-for>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ sheetShare }}" hint-placeholder-val="{{ false }}">
+        <div style="position:absolute;left:0;right:0;bottom:0;z-index:11;background:#1f1c19;border-radius:28px 28px 0 0;padding:10px 20px 34px;display:flex;flex-direction:column;gap:16px;animation:dcUp .28s cubic-bezier(.2,.8,.2,1)">
+          <div style="width:36px;height:4px;border-radius:2px;background:#4a443d;align-self:center"></div>
+          <div style="display:flex;align-items:center;gap:12px">
+            <div style="width:44px;height:44px;border-radius:12px;background:{{ sel.color }};color:#1a1612;display:flex;align-items:center;justify-content:center"><span style="font-family:'Material Symbols Rounded';font-size:24px">music_note</span></div>
+            <div style="display:flex;flex-direction:column;gap:2px;min-width:0">
+              <span style="font-weight:700;font-size:16px">Compartilhar “{{ sel.name }}”</span>
+              <span style="font:400 11.5px 'JetBrains Mono',monospace;color:#a39b91">{{ sel.file }}</span>
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px 8px">
+            <sc-for list="{{ shareTargets }}" as="t" hint-placeholder-count="8">
+              <button onClick="{{ t.onClick }}" style="display:flex;flex-direction:column;align-items:center;gap:6px;border:none;background:transparent;color:#f3efe9;cursor:pointer">
+                <div style="width:56px;height:56px;border-radius:28px;background:{{ t.bg }};color:#1a1612;display:flex;align-items:center;justify-content:center" style-hover="transform:scale(1.06)"><span style="font-family:'Material Symbols Rounded';font-size:26px">{{ t.icon }}</span></div>
+                <span style="font-size:12px;text-align:center;line-height:1.2">{{ t.label }}</span>
+              </button>
+            </sc-for>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ sheetDelete }}" hint-placeholder-val="{{ false }}">
+        <div style="position:absolute;left:28px;right:28px;top:300px;z-index:11;background:#25211d;border-radius:28px;padding:24px;display:flex;flex-direction:column;gap:14px;animation:dcScale .2s ease-out">
+          <span style="font-family:'Material Symbols Rounded';font-size:28px;color:oklch(0.75 0.15 25);align-self:center">delete</span>
+          <div style="font-weight:800;font-size:21px;text-align:center">Excluir “{{ sel.name }}”?</div>
+          <div style="font-size:14px;line-height:1.45;color:#c4bcb1;text-align:center;text-wrap:pretty">O áudio sai da lista de todo mundo e o arquivo é apagado. Não dá pra desfazer.</div>
+          <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:6px">
+            <button onClick="{{ closeSheet }}" style="height:42px;padding:0 18px;border-radius:21px;border:none;background:transparent;color:#f3efe9;font-weight:600;cursor:pointer">Cancelar</button>
+            <button onClick="{{ confirmDelete }}" style="height:42px;padding:0 20px;border-radius:21px;border:none;background:oklch(0.72 0.17 25);color:#1a1612;font-weight:700;cursor:pointer">Excluir</button>
+          </div>
+        </div>
+      </sc-if>
+
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;columns&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[2,3],&quot;default&quot;:2,&quot;tsType&quot;:&quot;number&quot;},&quot;initialMode&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;caos&quot;,&quot;playpause&quot;],&quot;default&quot;:&quot;caos&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+const HUES = [25, 60, 95, 145, 190, 235, 285, 330];
+const col = h => `oklch(0.76 0.15 ${h})`;
+const SEED = [
+  { id: 's1', name: 'Bruh', synth: 'bruh', dur: 0.7, hue: 25, owner: 'lucas', pub: true, fav: true },
+  { id: 's2', name: 'Vine boom', synth: 'boom', dur: 1.3, hue: 285, owner: 'bia', pub: true, fav: true },
+  { id: 's3', name: 'Trombone triste', synth: 'trombone', dur: 2.1, hue: 235, owner: 'você', pub: true, fav: false },
+  { id: 's4', name: 'Buzina de ar', synth: 'horn', dur: 1.7, hue: 60, owner: 'lucas', pub: true, fav: false },
+  { id: 's5', name: 'Plim plim', synth: 'plim', dur: 1.3, hue: 145, owner: 'bia', pub: true, fav: false },
+  { id: 's6', name: 'Rufar de tambor', synth: 'drumroll', dur: 2.1, hue: 330, owner: 'você', pub: false, fav: false },
+  { id: 's7', name: 'Ué?!', synth: 'ue', dur: 0.8, hue: 95, owner: 'lucas', pub: true, fav: true },
+  { id: 's8', name: 'Acertou, mizerávi', synth: 'win', dur: 0.9, hue: 190, owner: 'bia', pub: true, fav: false },
+  { id: 's9', name: 'Errou feio', synth: 'buzzer', dur: 1.0, hue: 25, owner: 'você', pub: true, fav: false },
+  { id: 's10', name: 'Silêncio constrangedor', synth: 'cricket', dur: 1.9, hue: 145, owner: 'lucas', pub: true, fav: false },
+  { id: 's11', name: 'Pew pew', synth: 'laser', dur: 0.6, hue: 330, owner: 'você', pub: false, fav: false },
+  { id: 's12', name: 'Moedinha', synth: 'coin', dur: 0.6, hue: 95, owner: 'bia', pub: true, fav: false },
+].map((s, i) => ({ ...s, created: 100 - i, file: s.name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '') + '.mp3' }));
+const norm = s => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+const fmtDur = d => d ? d.toFixed(1).replace('.', ',') + 's' : '—';
+
+function synth(ctx, out, t, kind) {
+  const osc = (type, f0, f1, st, d, vol, filt, hold) => {
+    const o = ctx.createOscillator(); o.type = type;
+    o.frequency.setValueAtTime(f0, st);
+    if (f1) o.frequency.exponentialRampToValueAtTime(f1, st + d);
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.0001, st);
+    g.gain.exponentialRampToValueAtTime(vol, st + 0.012);
+    if (hold) g.gain.setValueAtTime(vol, st + d - 0.06);
+    g.gain.exponentialRampToValueAtTime(0.0001, st + d);
+    let n = o;
+    if (filt) { const f = ctx.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = filt; o.connect(f); n = f; }
+    n.connect(g); g.connect(out); o.start(st); o.stop(st + d + 0.05); return o;
+  };
+  const noise = (st, d, vol, ff, ft = 'bandpass') => {
+    if (!synth.buf) { const b = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate); const a = b.getChannelData(0); for (let i = 0; i < a.length; i++) a[i] = Math.random() * 2 - 1; synth.buf = b; }
+    const s = ctx.createBufferSource(); s.buffer = synth.buf; s.loop = true;
+    const f = ctx.createBiquadFilter(); f.type = ft; f.frequency.value = ff;
+    const g = ctx.createGain(); g.gain.setValueAtTime(vol, st); g.gain.exponentialRampToValueAtTime(0.0001, st + d);
+    s.connect(f); f.connect(g); g.connect(out); s.start(st); s.stop(st + d + 0.05);
+  };
+  switch (kind) {
+    case 'bruh': osc('sawtooth', 150, 85, t, 0.6, 0.5, 700, true); osc('sawtooth', 152, 86, t, 0.6, 0.3, 500, true); break;
+    case 'boom': osc('sine', 90, 32, t, 1.25, 0.95); noise(t, 0.25, 0.6, 180, 'lowpass'); osc('triangle', 60, 30, t, 1.0, 0.4); break;
+    case 'trombone': [293.7, 277.2, 261.6].forEach((f, i) => osc('sawtooth', f, 0, t + i * 0.38, 0.36, 0.3, 1200, true));
+      { const o = osc('sawtooth', 246.9, 0, t + 1.14, 0.95, 0.3, 1200, true); const l = ctx.createOscillator(); l.frequency.value = 6; const lg = ctx.createGain(); lg.gain.value = 6; l.connect(lg); lg.connect(o.frequency); l.start(t + 1.14); l.stop(t + 2.1); } break;
+    case 'horn': [0, 0.33, 0.66].forEach(d => { osc('square', 370, 0, t + d, 0.26, 0.14, 2500, true); osc('square', 466, 0, t + d, 0.26, 0.12, 2500, true); }); osc('square', 370, 0, t + 0.99, 0.7, 0.14, 2500, true); osc('square', 466, 0, t + 0.99, 0.7, 0.12, 2500, true); break;
+    case 'plim': osc('sine', 1318.5, 0, t, 0.9, 0.4); osc('sine', 2637, 0, t, 0.4, 0.1); osc('sine', 1760, 0, t + 0.2, 1.1, 0.4); osc('sine', 3520, 0, t + 0.2, 0.4, 0.1); break;
+    case 'drumroll': for (let i = 0; i < 34; i++) noise(t + i * 0.042, 0.05, 0.08 + i * 0.012, 1800); noise(t + 1.45, 0.65, 0.6, 5000, 'highpass'); osc('sine', 110, 50, t + 1.45, 0.4, 0.7); break;
+    case 'ue': osc('triangle', 280, 720, t, 0.34, 0.45, 0, true); osc('triangle', 480, 950, t + 0.38, 0.38, 0.45, 0, true); break;
+    case 'win': [523.3, 659.3, 784, 1046.5].forEach((f, i) => osc('square', f, 0, t + i * 0.1, 0.12, 0.13, 3000, true)); osc('square', 1046.5, 0, t + 0.4, 0.45, 0.13, 3000, true); osc('square', 1318.5, 0, t + 0.4, 0.45, 0.08, 3000, true); break;
+    case 'buzzer': osc('sawtooth', 110, 0, t, 0.42, 0.3, 900, true); osc('sawtooth', 104, 0, t + 0.5, 0.48, 0.3, 900, true); break;
+    case 'cricket': [0, 0.7, 1.4].forEach(g => { for (let i = 0; i < 4; i++) osc('sine', 4400, 0, t + g + i * 0.06, 0.045, 0.12); }); break;
+    case 'laser': osc('square', 1600, 180, t, 0.2, 0.15, 4000); osc('square', 1500, 160, t + 0.26, 0.24, 0.15, 4000); break;
+    case 'coin': osc('square', 987.8, 0, t, 0.08, 0.14, 0, true); osc('square', 1318.5, 0, t + 0.08, 0.45, 0.14); break;
+  }
+}
+
+class Component extends DCLogic {
+  authVals() {
+    const { auth, af, aErr, aBusy, showPass, aTouched } = this.state;
+    const signup = auth === 'signup';
+    const err = this.authErrors();
+    const set = k => e => this.setState({ af: { ...this.state.af, [k]: e.target.value }, aErr: '' });
+    const field = (k, label, icon, type, placeholder) => {
+      const e = aTouched ? err[k] : '';
+      return { label, icon, type: type === 'password' && showPass ? 'text' : type, placeholder, value: af[k], onChange: set(k), isPass: type === 'password', error: e || '', border: e ? 'oklch(0.75 0.15 25)' : '#3a352f' };
+    };
+    const fields = signup
+      ? [field('name', 'Seu nome', 'person', 'text', 'Como seus amigos te chamam'), field('email', 'E-mail', 'mail', 'email', 'voce@email.com'), field('pass', 'Senha', 'lock', 'password', 'Mínimo 6 caracteres'), field('pass2', 'Confirmar senha', 'lock', 'password', 'Repita a senha')]
+      : [field('email', 'E-mail', 'mail', 'email', 'voce@email.com'), field('pass', 'Senha', 'lock', 'password', 'Sua senha')];
+    const tab = (k, label) => ({ label, bg: auth === k ? '#f3efe9' : 'transparent', fg: auth === k ? '#1a1612' : '#a39b91', onClick: () => this.setState({ auth: k, aErr: '', aTouched: false }) });
+    return {
+      isAuth: !!auth, isLogin: auth === 'login',
+      authTitle: signup ? 'Crie sua conta' : 'Bem-vindo de volta',
+      authSub: signup ? 'Pra enviar seus áudios e ver os dos amigos.' : 'Entre pra tocar e mandar os áudios da galera.',
+      authTabs: [tab('login', 'Entrar'), tab('signup', 'Criar conta')],
+      authFields: fields, passIcon: showPass ? 'visibility_off' : 'visibility',
+      toggleShowPass: () => this.setState({ showPass: !showPass }),
+      authError: aErr, authBtnOpacity: aBusy ? '.7' : '1',
+      authBtnLabel: aBusy ? (signup ? 'Criando conta…' : 'Entrando…') : (signup ? 'Criar conta' : 'Entrar'),
+      submitAuth: this.submitAuth,
+      forgot: () => { const em = af.email.trim(); if (!/^\S+@\S+\.\S+$/.test(em)) return this.setState({ aTouched: true, aErr: 'Digite seu e-mail acima pra receber o link.' }); this.toast('Link de redefinição enviado pra ' + em); },
+      authHint: signup ? 'Você vai receber um e-mail de confirmação.' : 'Protótipo: qualquer e-mail válido + senha com 6+ caracteres.\nSenha "errada" simula erro de login.',
+    };
+  }
+  authErrors() {
+    const { auth, af } = this.state; const e = {};
+    if (auth === 'signup' && !af.name.trim()) e.name = 'Digite seu nome';
+    if (!/^\S+@\S+\.\S+$/.test(af.email.trim())) e.email = 'E-mail inválido';
+    if (af.pass.length < 6) e.pass = auth === 'signup' ? 'A senha precisa ter pelo menos 6 caracteres' : 'Digite sua senha';
+    if (auth === 'signup' && af.pass2 !== af.pass) e.pass2 = 'As senhas não batem';
+    return e;
+  }
+  submitAuth = () => {
+    if (this.state.aBusy) return;
+    this.setState({ aTouched: true });
+    if (Object.keys(this.authErrors()).length) return;
+    const { auth, af } = this.state;
+    this.setState({ aBusy: true, aErr: '' });
+    setTimeout(() => {
+      if (auth === 'login' && af.pass === 'errada') return this.setState({ aBusy: false, aErr: 'E-mail ou senha incorretos.' });
+      const email = af.email.trim();
+      const name = auth === 'signup' ? af.name.trim() : (this.state.user && this.state.user.email === email ? this.state.user.name : email.split('@')[0]);
+      this.setState({ aBusy: false, auth: null, user: { name, email }, tab: 'audios', af: { name: '', email: '', pass: '', pass2: '' }, aTouched: false, showPass: false });
+      this.toast(auth === 'signup' ? `Conta criada. Bem-vindo, ${name}!` : `Oi, ${name}!`);
+    }, 900);
+  };
+  state = { auth: 'login', af: { name: '', email: '', pass: '', pass2: '' }, aErr: '', aBusy: false, showPass: false, aTouched: false, user: null, sounds: SEED, tab: 'audios', filter: 'all', q: '', sort: 'recent', mode: null, sheet: null, selId: null, form: null, nameErr: '', upload: null, toast: '' };
+  voices = [];
+  fileRef = React.createRef();
+
+  mode() { return this.state.mode ?? this.props.initialMode ?? 'caos'; }
+  ctx() { if (!this.ac) this.ac = new (window.AudioContext || window.webkitAudioContext)(); if (this.ac.state === 'suspended') this.ac.resume(); return this.ac; }
+
+  startVoice(s) {
+    const id = Math.random().toString(36).slice(2);
+    let stop;
+    const v = { id, sid: s.id, start: performance.now(), dur: (s.dur || 1) * 1000 };
+    if (s.url) {
+      const a = new Audio(s.url); a.play().catch(() => {});
+      a.onended = () => this.removeVoice(id);
+      stop = () => { a.pause(); };
+    } else {
+      const ctx = this.ctx(); const g = ctx.createGain(); g.gain.value = 0.8; g.connect(ctx.destination);
+      synth(ctx, g, ctx.currentTime + 0.01, s.synth);
+      v.timer = setTimeout(() => this.removeVoice(id), v.dur + 60);
+      stop = () => { const n = ctx.currentTime; g.gain.cancelScheduledValues(n); g.gain.setValueAtTime(g.gain.value, n); g.gain.linearRampToValueAtTime(0, n + 0.04); setTimeout(() => g.disconnect(), 80); };
+    }
+    v.stop = stop;
+    this.voices.push(v);
+    this.loop();
+  }
+  removeVoice(id) { this.voices = this.voices.filter(v => v.id !== id); }
+  stopVoices(pred = () => true) { this.voices.filter(pred).forEach(v => { clearTimeout(v.timer); v.stop(); }); this.voices = this.voices.filter(v => !pred(v)); this.forceUpdate(); }
+  loop = () => {
+    if (this.raf) return;
+    const tick = () => { this.forceUpdate(); if (this.voices.length) this.raf = requestAnimationFrame(tick); else this.raf = null; };
+    this.raf = requestAnimationFrame(tick);
+  };
+  play(s) {
+    if (this.mode() === 'playpause') {
+      const playing = this.voices.some(v => v.sid === s.id);
+      this.stopVoices();
+      if (playing) return;
+    }
+    this.startVoice(s);
+  }
+  componentWillUnmount() { this.stopVoices(); cancelAnimationFrame(this.raf); }
+
+  toast(msg) { clearTimeout(this.tt); this.setState({ toast: msg }); this.tt = setTimeout(() => this.setState({ toast: '' }), 2400); }
+  upd(id, patch) { this.setState(st => ({ sounds: st.sounds.map(s => s.id === id ? { ...s, ...patch } : s) })); }
+  toggleFav(id) { const s = this.state.sounds.find(x => x.id === id); this.upd(id, { fav: !s.fav }); this.toast(s.fav ? 'Removido dos favoritos' : 'Adicionado aos favoritos'); }
+  setMode(m) { this.stopVoices(); this.setState({ mode: m }); this.toast(m === 'caos' ? 'Modo caos ligado — vai ter eco' : 'Modo play/pause — um áudio por vez'); }
+  closeSheet = () => { if (this.state.upload) return; this.setState({ sheet: null, nameErr: '' }); };
+
+  openForm(f) { this.setState({ sheet: 'form', form: f, nameErr: '' }); }
+  onFile = e => {
+    const f = e.target.files && e.target.files[0]; e.target.value = '';
+    if (!f) return;
+    if (f.size > 5 * 1024 * 1024) return this.toast('Arquivo maior que 5 MB');
+    const url = URL.createObjectURL(f);
+    const a = new Audio(url);
+    const base = f.name.replace(/\.[^.]+$/, '').replace(/[_-]+/g, ' ').trim().slice(0, 80);
+    const form = { mode: 'new', name: base, hue: HUES[Math.floor(Math.random() * 8)], pub: true, fileName: f.name, url, dur: 0 };
+    a.onloadedmetadata = () => { if (isFinite(a.duration)) this.setState(st => st.form && st.form.url === url ? { form: { ...st.form, dur: a.duration } } : null); };
+    this.openForm(form);
+  };
+  useSample = () => {
+    const kinds = ['bruh', 'boom', 'horn', 'plim', 'ue', 'win', 'coin', 'laser'];
+    const k = kinds[Math.floor(Math.random() * kinds.length)];
+    const d = SEED.find(s => s.synth === k).dur;
+    this.openForm({ mode: 'new', name: '', hue: HUES[Math.floor(Math.random() * 8)], pub: true, fileName: 'gravacao_' + (1000 + Math.floor(Math.random() * 9000)) + '.m4a', synth: k, dur: d });
+  };
+  submitForm = () => {
+    const f = this.state.form; const name = f.name.trim();
+    if (!name) return this.setState({ nameErr: 'Dê um nome pro áudio' });
+    if (f.mode === 'edit') {
+      this.upd(f.id, { name, hue: f.hue, pub: f.pub });
+      this.setState({ sheet: null }); return this.toast('Alterações salvas');
+    }
+    if (this.state.upload) return;
+    let p = 0;
+    this.setState({ upload: 0.02 });
+    const iv = setInterval(() => {
+      p = Math.min(1, p + 0.07 + Math.random() * 0.1);
+      this.setState({ upload: p });
+      if (p >= 1) {
+        clearInterval(iv);
+        const ns = { id: 'u' + Date.now(), name, hue: f.hue, pub: f.pub, fav: false, owner: 'você', synth: f.synth, url: f.url, dur: f.dur || 1, file: f.fileName, created: Date.now() };
+        this.setState(st => ({ upload: null, sheet: null, sounds: [ns, ...st.sounds], tab: 'audios', filter: 'all', q: '', sort: 'recent' }));
+        this.toast(f.pub ? 'Áudio enviado — visível pra todos' : 'Áudio enviado — só você vê');
+      }
+    }, 110);
+  };
+
+  renderVals() {
+    const { sounds, tab, filter, q, sort, sheet, form, upload } = this.state;
+    const mode = this.mode();
+    const cols = Number(this.props.columns ?? 2);
+    const now = performance.now();
+    const qn = norm(q.trim());
+    let list = sounds.filter(s => {
+      if (tab === 'favs' && !s.fav) return false;
+      if (tab === 'audios') {
+        if (filter === 'fav' && !s.fav) return false;
+        if (filter === 'mine' && s.owner !== 'você') return false;
+        if (filter === 'pub' && !s.pub) return false;
+        if (filter === 'priv' && s.pub) return false;
+      }
+      return !qn || norm(s.name).includes(qn);
+    });
+    list = [...list].sort(sort === 'az' ? (a, b) => a.name.localeCompare(b.name, 'pt') : (a, b) => b.created - a.created);
+    const items = list.map(s => {
+      const vs = this.voices.filter(v => v.sid === s.id);
+      const last = vs[vs.length - 1];
+      const p = last ? Math.min(1, (now - last.start) / last.dur) : 0;
+      const playing = vs.length > 0;
+      return {
+        ...s, color: col(s.hue), durLabel: fmtDur(s.dur), isPrivate: !s.pub,
+        progressW: playing ? (p * 100).toFixed(1) + '%' : '0%',
+        hasMulti: vs.length > 1, voicesLabel: '×' + vs.length,
+        knobBg: playing ? '#1a1612' : 'rgba(26,22,18,.12)', knobFg: playing ? col(s.hue) : '#1a1612',
+        knobIcon: playing ? (mode === 'playpause' ? 'stop' : 'graphic_eq') : 'play_arrow',
+        heartFill: s.fav ? "'FILL' 1" : "'FILL' 0",
+        onTap: () => this.play(s),
+        onFav: e => { e.stopPropagation(); this.toggleFav(s.id); },
+        onShare: e => { e.stopPropagation(); this.setState({ sheet: 'share', selId: s.id }); },
+        onMore: e => { e.stopPropagation(); this.setState({ sheet: 'actions', selId: s.id }); },
+      };
+    });
+
+    const chipDefs = [['all', 'Todos'], ['fav', 'Favoritos'], ['mine', 'Meus'], ['pub', 'Públicos'], ['priv', 'Privados']];
+    const chips = chipDefs.map(([k, label]) => {
+      const on = filter === k;
+      return { label, bg: on ? '#f3efe9' : 'transparent', fg: on ? '#1a1612' : '#d9d2c8', border: on ? '#f3efe9' : '#3a352f', onClick: () => this.setState({ filter: k }) };
+    });
+
+    const raw = this.state.sounds.find(s => s.id === this.state.selId);
+    const sel = raw ? { ...raw, color: col(raw.hue), meta: (raw.owner === 'você' ? 'Enviado por você' : 'Enviado por ' + raw.owner) + ' · ' + (raw.pub ? 'Público' : 'Privado') + ' · ' + fmtDur(raw.dur) } : { name: '', color: '#333', meta: '', file: '' };
+    const own = raw && raw.owner === 'você';
+    const actionRows = raw ? [
+      { icon: 'play_arrow', label: 'Tocar', fg: '#f3efe9', fill: "'FILL' 1", onClick: () => { this.play(raw); this.setState({ sheet: null }); } },
+      { icon: 'share', label: 'Compartilhar', fg: '#f3efe9', fill: "'FILL' 0", onClick: () => this.setState({ sheet: 'share' }) },
+      { icon: 'favorite', label: raw.fav ? 'Remover dos favoritos' : 'Adicionar aos favoritos', fg: '#f3efe9', fill: raw.fav ? "'FILL' 1" : "'FILL' 0", onClick: () => { this.toggleFav(raw.id); this.setState({ sheet: null }); } },
+      ...(own ? [
+        { icon: 'edit', label: 'Editar nome e visibilidade', fg: '#f3efe9', fill: "'FILL' 0", onClick: () => this.openForm({ mode: 'edit', id: raw.id, name: raw.name, hue: raw.hue, pub: raw.pub, fileName: raw.file, dur: raw.dur, synth: raw.synth, url: raw.url }) },
+        { icon: 'delete', label: 'Excluir', fg: 'oklch(0.75 0.15 25)', fill: "'FILL' 0", onClick: () => this.setState({ sheet: 'delete' }) },
+      ] : []),
+    ] : [];
+    const shareDefs = [['WhatsApp', 'chat', 145], ['Telegram', 'send', 235], ['Mensagens', 'sms', 190], ['Discord', 'forum', 285], ['Gmail', 'mail', 25], ['Drive', 'add_to_drive', 95], ['Bluetooth', 'bluetooth', 235], ['Mais', 'more_horiz', 60]];
+    const shareTargets = shareDefs.map(([label, icon, h]) => ({ label, icon, bg: col(h), onClick: () => { this.setState({ sheet: null }); this.toast(`“${sel.name}” enviado via ${label}`); } }));
+
+    const modeCards = [
+      { k: 'caos', icon: 'cyclone', title: 'Modo caos', desc: 'Cada toque toca de novo sem parar o anterior — os áudios se sobrepõem como um eco.', h: 25 },
+      { k: 'playpause', icon: 'play_pause', title: 'Play / Pause', desc: 'Um áudio por vez. Tocar outro para o atual; tocar o mesmo de novo para.', h: 190 },
+    ].map(m => {
+      const on = mode === m.k;
+      return { ...m, selected: on, bg: on ? '#25211d' : '#1a1714', border: on ? col(m.h) : '#2c2723', iconBg: col(m.h), radio: on ? col(m.h) : '#5a534b', onClick: () => this.setMode(m.k) };
+    });
+
+    const navDefs = [['audios', 'Áudios', 'grid_view'], ['favs', 'Favoritos', 'favorite'], ['settings', 'Ajustes', 'tune']];
+    const navItems = navDefs.map(([k, label, icon]) => {
+      const on = tab === k;
+      return { label, icon, fg: on ? '#f3efe9' : '#a39b91', pill: on ? '#3a332b' : 'transparent', fill: on ? "'FILL' 1" : "'FILL' 0", onClick: () => this.setState({ tab: k }) };
+    });
+
+    const n = this.voices.length;
+    const f = form || { name: '', hue: 25, pub: true, fileName: '', dur: 0 };
+    const isEmpty = items.length === 0;
+    const mine = sounds.filter(s => s.owner === 'você').length;
+    return {
+      isGridTab: tab !== 'settings', isSettings: tab === 'settings',
+      title: tab === 'favs' ? 'Favoritos' : 'My Instants', showChips: tab === 'audios',
+      modeLabel: mode === 'caos' ? 'Caos' : 'Play/Pause', modeIcon: mode === 'caos' ? 'cyclone' : 'play_pause',
+      modeChipBg: mode === 'caos' ? col(25) : '#2c2723', modeChipFg: mode === 'caos' ? '#1a1612' : '#f3efe9',
+      toggleMode: () => this.setMode(mode === 'caos' ? 'playpause' : 'caos'),
+      q, hasQ: q.length > 0, onQ: e => this.setState({ q: e.target.value }), clearQ: () => this.setState({ q: '' }),
+      chips, countLabel: items.length + (items.length === 1 ? ' áudio' : ' áudios'),
+      sortLabel: sort === 'az' ? 'A–Z' : 'Recentes', toggleSort: () => this.setState({ sort: sort === 'az' ? 'recent' : 'az' }),
+      gridCols: `repeat(${cols}, minmax(0,1fr))`, tileFont: cols >= 3 ? '14px' : '17px',
+      items, isEmpty,
+      emptyIcon: tab === 'favs' && !qn ? 'heart_plus' : 'search_off',
+      emptyMsg: qn ? `Nada encontrado pra “${q.trim()}”.` : tab === 'favs' ? 'Toque no coração de um áudio pra ele aparecer aqui.' : 'Nenhum áudio neste filtro.',
+      modeCards, demoMode: () => { const s = sounds.find(x => x.synth === 'boom') || sounds[0]; if (!s) return; this.play(s); setTimeout(() => this.play(s), 250); setTimeout(() => this.play(s), 500); },
+      mineCount: mine + (mine === 1 ? ' áudio enviado' : ' áudios enviados'), logout: () => { this.stopVoices(); this.setState({ auth: 'login', sheet: null, af: { name: '', email: this.state.user ? this.state.user.email : '', pass: '', pass2: '' } }); },
+      userName: (this.state.user && this.state.user.name) || 'Você', userEmail: (this.state.user && this.state.user.email) || 'voce@email.com',
+      userInitial: (((this.state.user && this.state.user.name) || 'V')[0] || 'V').toUpperCase(),
+      ...this.authVals(),
+      anyPlaying: n > 0, stopLabel: n > 1 ? `Parar tudo (${n})` : 'Parar', stopAll: () => this.stopVoices(),
+      openPick: () => this.setState({ sheet: 'pick' }),
+      navItems, toastMsg: this.state.toast,
+      hasSheet: !!sheet, closeSheet: this.closeSheet,
+      sheetPick: sheet === 'pick', sheetForm: sheet === 'form', sheetActions: sheet === 'actions', sheetShare: sheet === 'share', sheetDelete: sheet === 'delete',
+      fileRef: this.fileRef, chooseFile: () => this.fileRef.current && this.fileRef.current.click(), onFile: this.onFile, useSample: this.useSample,
+      form: f, formTitle: f.mode === 'edit' ? 'Editar áudio' : 'Novo áudio', formColor: col(f.hue), formDur: fmtDur(f.dur),
+      previewForm: () => this.startVoice({ id: '__preview', synth: f.synth, url: f.url, dur: f.dur }),
+      nameCount: f.name.length + '/80', nameError: this.state.nameErr, nameBorder: this.state.nameErr ? 'oklch(0.75 0.15 25)' : '#3a352f',
+      onName: e => this.setState({ form: { ...f, name: e.target.value.slice(0, 80) }, nameErr: '' }),
+      swatches: HUES.map(h => ({ bg: col(h), ring: h === f.hue ? '0 0 0 3px #1f1c19, 0 0 0 5px #f3efe9' : 'none', onClick: () => this.setState({ form: { ...f, hue: h } }) })),
+      togglePub: () => this.setState({ form: { ...f, pub: !f.pub } }),
+      pubBoxBg: f.pub ? 'oklch(0.86 0.16 95)' : 'transparent', pubBoxBorder: f.pub ? 'oklch(0.86 0.16 95)' : '#6a6259',
+      pubDesc: f.pub ? 'Todos os amigos logados veem e podem tocar.' : 'Desmarcado: só você vê este áudio.',
+      isUploading: upload != null, uploadW: Math.round((upload || 0) * 100) + '%', uploadLabel: `Enviando… ${Math.round((upload || 0) * 100)}%`,
+      submitLabel: f.mode === 'edit' ? 'Salvar' : (upload != null ? 'Enviando…' : 'Enviar'), submitForm: this.submitForm,
+      sel, actionRows, shareTargets,
+      confirmDelete: () => { const id = this.state.selId; this.stopVoices(v => v.sid === id); this.setState(st => ({ sounds: st.sounds.filter(s => s.id !== id), sheet: null })); this.toast('Áudio excluído'); },
+    };
+  }
+}
+</script>
+</body>
+</html>
