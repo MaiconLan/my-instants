@@ -125,7 +125,7 @@ jobs:
           set -euo pipefail
           APK="$PWD/build/my-instants-$MYINSTANTS_BUILD_LABEL.apk"
           mkdir -p "$(dirname "$APK")"
-          npx eas build \
+          npx --yes eas-cli@latest build \
             --profile preview \
             --platform android \
             --local \
